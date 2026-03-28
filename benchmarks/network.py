@@ -65,5 +65,6 @@ def run(progress_callback=None, skip=False) -> dict:
             "upload_mbps": 0.0,
             "ping_ms": 0.0,
             "score": 0,
-            "skipped": False,
+            "skipped": True,
+            "error": str(e),
         }

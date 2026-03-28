@@ -4,7 +4,7 @@
 A GUI-based system benchmark tool that tests CPU, RAM, Disk, GPU, and Network
 performance and generates a comprehensive JSON report.
 
-License: GPL-3.0
+License: GPL-3.0-or-later
 """
 
 import argparse

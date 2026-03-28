@@ -57,13 +57,20 @@ def _single_core_workload(_=None) -> float:
     return time.perf_counter() - start
 
 
-def _multi_core_worker(_=None) -> float:
-    return _single_core_workload()
-
-
 # Reference time for a mid-range system (Ryzen 5 5600 single core ~ 2.5s)
 REFERENCE_SINGLE = 2.5
 REFERENCE_MULTI = 0.6  # ~2.5s / (6 cores * some overhead)
+
+
+def _run_multicore(cores: int) -> float:
+    """Run CPU-bound workload in separate processes for true multi-core execution."""
+    # Cap process count to prevent overloading very high-core servers.
+    workers = max(1, min(cores, 16))
+    with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
+        futures = [executor.submit(_single_core_workload, i) for i in range(workers)]
+        times = [future.result() for future in concurrent.futures.as_completed(futures)]
+    # Wall-clock completion approximated by the slowest worker.
+    return max(times)
 
 
 def run(progress_callback=None) -> dict:
@@ -71,7 +78,6 @@ def run(progress_callback=None) -> dict:
     try:
         cores = os.cpu_count() or 4
 
-        # Single-core benchmark
         if progress_callback:
             progress_callback(0.1, "Running single-core test...")
         single_time = _single_core_workload()
@@ -79,19 +85,20 @@ def run(progress_callback=None) -> dict:
         if progress_callback:
             progress_callback(0.4, "Running multi-core test...")
 
-        # Multi-core benchmark: run workload on all cores using threads
-        # (ProcessPoolExecutor can cause issues with tkinter on Windows)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=cores) as executor:
-            futures = [executor.submit(_multi_core_worker, i) for i in range(cores)]
-            times = [f.result() for f in concurrent.futures.as_completed(futures)]
-        multi_time = max(times)  # wall-clock is the slowest worker
+        try:
+            multi_time = _run_multicore(cores)
+        except Exception:
+            # Fallback: ThreadPool still gives a result even if process spawning is unavailable.
+            with concurrent.futures.ThreadPoolExecutor(max_workers=cores) as executor:
+                futures = [executor.submit(_single_core_workload, i) for i in range(cores)]
+                times = [future.result() for future in concurrent.futures.as_completed(futures)]
+            multi_time = max(times)
 
         if progress_callback:
             progress_callback(0.9, "Calculating scores...")
 
-        # Score: reference_time / actual_time * 50000, capped at 100000
         single_score = int(min((REFERENCE_SINGLE / max(single_time, 0.001)) * 50_000, 100_000))
-        multi_score = int(min((REFERENCE_MULTI / max(multi_time, 0.001)) * 50_000 * (cores / 6), 100_000))
+        multi_score = int(min((REFERENCE_MULTI / max(multi_time, 0.001)) * 50_000 * (min(cores, 16) / 6), 100_000))
 
         total_duration = single_time + multi_time
 

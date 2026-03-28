@@ -213,8 +213,15 @@ class DemBenchApp:
         self.root.title("DemBench v1.0 — DemirArch")
         self.root.configure(fg_color=BG_BASE)
 
-        # Fullscreen
-        self.root.state("zoomed")  # Windows maximized fullscreen
+        # Fullscreen / maximized (cross-platform)
+        try:
+            self.root.state("zoomed")  # Windows
+        except Exception:
+            try:
+                self.root.attributes("-zoomed", True)  # Linux
+            except Exception:
+                pass
+        self.root.minsize(1100, 760)
         self.root.protocol("WM_DELETE_WINDOW", self._quit)
 
         self._build()
@@ -237,7 +244,15 @@ class DemBenchApp:
         ctk.CTkLabel(header, text=LOGO_TEXT, font=("Consolas", 11),
                      text_color=ACCENT, justify="center").pack(padx=20, pady=(20, 6))
         ctk.CTkLabel(header, text="DemirArch  •  DemBench v1.0  •  System Benchmark",
-                     font=(FONT, 14), text_color=TEXT_DIM).pack(pady=(0, 16))
+                     font=(FONT, 14), text_color=TEXT_DIM).pack(pady=(0, 2))
+        run_mode = []
+        if self.skip_gpu:
+            run_mode.append("GPU skipped")
+        if self.skip_network:
+            run_mode.append("Network skipped")
+        mode_text = "Run mode: " + (", ".join(run_mode) if run_mode else "Full benchmark")
+        ctk.CTkLabel(header, text=mode_text,
+                     font=(FONT, 12), text_color=TEXT_DIM).pack(pady=(0, 14))
 
         # ── Benchmark cards ───────────────────────────────────────────────────
         self.cards = {}
@@ -252,6 +267,26 @@ class DemBenchApp:
             card = BenchmarkCard(self.content, title, icon, weight)
             card.pack(fill="x", padx=16, pady=6)
             self.cards[key] = card
+
+        # ── Overall progress ───────────────────────────────────────────────────
+        overall = ctk.CTkFrame(self.content, fg_color=BG_SURFACE, corner_radius=CARD_RADIUS)
+        overall.pack(fill="x", padx=16, pady=(10, 6))
+
+        overall_row = ctk.CTkFrame(overall, fg_color="transparent")
+        overall_row.pack(fill="x", padx=24, pady=(14, 8))
+        ctk.CTkLabel(overall_row, text="Overall Progress", font=(FONT, 14, "bold"),
+                     text_color=TEXT_ON).pack(side="left")
+        self.overall_pct = ctk.CTkLabel(overall_row, text="0%", font=(FONT, 12), text_color=TEXT_DIM)
+        self.overall_pct.pack(side="right")
+
+        self.overall_progress = ctk.CTkProgressBar(overall, height=9, corner_radius=5,
+                                                   fg_color=BG_SURFACE2, progress_color=ACCENT)
+        self.overall_progress.pack(fill="x", padx=24, pady=(0, 6))
+        self.overall_progress.set(0)
+
+        self.overall_status = ctk.CTkLabel(overall, text="Waiting to start...",
+                                           font=(FONT, 12), text_color=TEXT_DIM, anchor="w")
+        self.overall_status.pack(fill="x", padx=28, pady=(0, 14))
 
         # ── Summary (hidden until done) ───────────────────────────────────────
         self.summary = SummaryCard(self.content)
@@ -287,12 +322,26 @@ class DemBenchApp:
 
     # ── Benchmark runners ─────────────────────────────────────────────────────
 
+    def _set_overall_progress(self, pct: float, status: str):
+        pct = max(0.0, min(1.0, pct))
+        self.overall_progress.set(pct)
+        self.overall_pct.configure(text=f"{int(pct * 100)}%")
+        self.overall_status.configure(text=status)
+
     def _run_all(self):
-        self._bench_cpu()
-        self._bench_ram()
-        self._bench_disk()
-        self._bench_gpu()
-        self._bench_net()
+        steps = [
+            ("CPU benchmark running...", self._bench_cpu),
+            ("RAM benchmark running...", self._bench_ram),
+            ("Disk benchmark running...", self._bench_disk),
+            ("GPU benchmark running...", self._bench_gpu),
+            ("Network benchmark running...", self._bench_net),
+        ]
+        total = len(steps)
+        for index, (status, fn) in enumerate(steps, start=1):
+            self._safe(self._set_overall_progress, (index - 1) / total, status)
+            fn()
+            self._safe(self._set_overall_progress, index / total, f"Completed: {status}")
+        self._safe(self._set_overall_progress, 1.0, "All benchmarks completed.")
         self._safe(self._show_summary)
 
     def _bench_cpu(self):
@@ -389,9 +438,14 @@ class DemBenchApp:
     # ── Run ───────────────────────────────────────────────────────────────────
 
     def _quit(self):
-        self.root.destroy()
+        try:
+            if self.root.winfo_exists():
+                self.root.destroy()
+        except Exception:
+            pass
 
     def run(self):
+        self._set_overall_progress(0.0, "Initializing benchmark engine...")
         self.root.after(400, lambda: threading.Thread(
             target=self._run_all, daemon=True).start())
         self.root.mainloop()
