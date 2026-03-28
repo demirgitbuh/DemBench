@@ -43,7 +43,14 @@ def run(progress_callback=None) -> dict:
         if progress_callback:
             progress_callback(0.5, "Reading 256 MB test file...")
 
-        # Read benchmark
+        # Try to bypass OS page cache for a more accurate read benchmark
+        read_flags = os.O_RDONLY
+        try:
+            read_flags |= os.O_DIRECT
+        except AttributeError:
+            pass  # O_DIRECT not available on this platform
+
+        # Read benchmark - use standard read (O_DIRECT needs aligned buffers)
         start = time.perf_counter()
         with open(tmp_path, "rb") as f:
             while True:

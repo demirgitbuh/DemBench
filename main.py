@@ -15,7 +15,7 @@ import sys
 def main():
     parser = argparse.ArgumentParser(
         prog="dembench",
-        description="DemBench v1.0 - DemirArch System Benchmark Tool",
+        description="DemBench v2.0 - DemirArch System Benchmark Tool",
     )
     parser.add_argument(
         "--no-gpu",
@@ -47,9 +47,12 @@ def main():
     except Exception:
         import traceback
         err = traceback.format_exc()
-        print(err)
-        with open("dembench_error.log", "w") as f:
-            f.write(err)
+        print(f"[DemBench Error]\n{err}")
+        try:
+            with open("dembench_error.log", "w", encoding="utf-8") as f:
+                f.write(f"DemBench v2.0 Error Log\n{'='*40}\n{err}")
+        except OSError:
+            pass  # Cannot write log file (e.g., read-only filesystem)
         input("Press Enter to exit...")
 
 
