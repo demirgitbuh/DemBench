@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+*.log
+*.tmp
+dembench_report_*.json
+dembench_error.log
+debug*.log
+.env
+*.egg-info/
+dist/
+build/
