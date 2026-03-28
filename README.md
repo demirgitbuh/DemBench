@@ -3,7 +3,7 @@
 A modern, Material Design 3 inspired desktop benchmark tool built with Python and CustomTkinter. Tests your system across 5 components and gives a unified score out of 100,000.
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
-![License](https://img.shields.io/badge/License-GPL--3.0-green)
+![License](https://img.shields.io/badge/License-GPL--3.0--or--later-green)
 ![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey)
 ![Brand](https://img.shields.io/badge/Brand-DemirArch-00D4AA)
 
@@ -138,13 +138,13 @@ dembench/
 ├── scoring.py           # Weighted score calculation
 ├── reporter.py          # JSON report generator
 ├── requirements.txt
-├── LICENSE              # GPL-3.0
+├── LICENSE              # GPL-3.0-or-later
 └── .gitignore
 ```
 
 ## License
 
-GPL-3.0 — See [LICENSE](LICENSE) for details.
+GPL-3.0-or-later — See [LICENSE](LICENSE) for details.
 
 ---
 

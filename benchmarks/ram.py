@@ -8,7 +8,9 @@ import numpy as np
 # Reference bandwidth for DDR4-3200 ~ 20 GB/s practical
 REFERENCE_WRITE_MBPS = 15_000.0
 REFERENCE_READ_MBPS = 18_000.0
-BLOCK_SIZE_MB = 512
+DEFAULT_BLOCK_SIZE_MB = 256
+MIN_BLOCK_SIZE_MB = 64
+MAX_BLOCK_SIZE_MB = 512
 
 
 def run(progress_callback=None) -> dict:
@@ -18,7 +20,10 @@ def run(progress_callback=None) -> dict:
         total_gb = round(mem.total / (1024 ** 3), 2)
         available_gb = round(mem.available / (1024 ** 3), 2)
 
-        block_bytes = BLOCK_SIZE_MB * 1024 * 1024
+        # Use up to 10% of currently available memory to avoid OOM on low-memory systems.
+        dynamic_block_mb = int((mem.available / (1024 ** 2)) * 0.10)
+        block_mb = max(MIN_BLOCK_SIZE_MB, min(dynamic_block_mb, MAX_BLOCK_SIZE_MB, DEFAULT_BLOCK_SIZE_MB))
+        block_bytes = block_mb * 1024 * 1024
         iterations = 3
 
         if progress_callback:
@@ -52,8 +57,8 @@ def run(progress_callback=None) -> dict:
         avg_write = sum(write_times) / len(write_times)
         avg_read = sum(read_times) / len(read_times)
 
-        write_mbps = round(BLOCK_SIZE_MB / max(avg_write, 0.0001), 1)
-        read_mbps = round(BLOCK_SIZE_MB / max(avg_read, 0.0001), 1)
+        write_mbps = round(block_mb / max(avg_write, 0.0001), 1)
+        read_mbps = round(block_mb / max(avg_read, 0.0001), 1)
 
         # Score based on combined read/write performance
         write_ratio = min(write_mbps / REFERENCE_WRITE_MBPS, 1.0)
