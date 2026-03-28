@@ -1,68 +1,24 @@
-# DemBench - DemirArch System Benchmark Tool
+# DemBench — DemirArch System Benchmark Tool
 
-A terminal-based (TUI) system benchmark tool that tests CPU, RAM, Disk, GPU, and Network performance.
+A modern, Material Design 3 inspired desktop benchmark tool built with Python and CustomTkinter. Tests your system across 5 components and gives a unified score out of 100,000.
+
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
+![License](https://img.shields.io/badge/License-GPL--3.0-green)
+![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey)
+![Brand](https://img.shields.io/badge/Brand-DemirArch-00D4AA)
 
 ## Features
 
-- **CPU Benchmark**: Single-core and multi-core testing (primes, matrix multiplication, Fibonacci)
-- **RAM Benchmark**: Sequential read/write bandwidth measurement
-- **Disk Benchmark**: Sequential read/write speed with 256 MB temp file
-- **GPU Benchmark**: OpenGL triangle render loop (optional)
-- **Network Benchmark**: Download/upload speed and ping via speedtest (optional)
-- **Scoring**: Normalized 0–100,000 score per component with weighted total
-- **TUI**: Live progress bars and results via Textual
-- **JSON Report**: Detailed report saved automatically after each run
+- **CPU Benchmark** — Single-core & multi-core testing (prime calculation, matrix multiplication, recursive Fibonacci)
+- **RAM Benchmark** — Sequential read/write bandwidth measurement via NumPy
+- **Disk Benchmark** — Sequential read/write speed with 256 MB temp file (HDD & SSD compatible)
+- **GPU Benchmark** — OpenGL triangle render loop via PyOpenGL + Pygame (auto-skips if unavailable)
+- **Network Benchmark** — Download/upload speed & ping via speedtest-cli
+- **Modern GUI** — Fullscreen Material Design 3 dark theme, animated progress bars, status chips, score tiers
+- **JSON Report** — Auto-generated detailed report after each run
+- **Error Resilient** — Never crashes; gracefully skips failed tests and continues
 
-## Installation
-
-```bash
-# Clone or download the project
-cd dembench
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### Requirements
-
-- Python 3.10+
-- Dependencies: textual, psutil, rich, numpy, PyOpenGL, pygame, speedtest-cli
-
-## Usage
-
-```bash
-# Run full benchmark
-python main.py
-
-# Skip GPU test
-python main.py --no-gpu
-
-# Skip network test
-python main.py --no-network
-
-# Skip both and specify output path
-python main.py --no-gpu --no-network --output my_report.json
-```
-
-### Controls
-
-- **q** — Quit the application
-
-## Scoring System
-
-Each component generates a score from 0 to 100,000. The total score is a weighted average:
-
-| Component | Weight |
-|-----------|--------|
-| CPU       | 30%    |
-| RAM       | 20%    |
-| Disk      | 20%    |
-| GPU       | 20%    |
-| Network   | 10%    |
-
-Reference system: Ryzen 5 5600, 16 GB DDR4, NVMe SSD, mid-range GPU, 100 Mbps internet.
-
-## Sample Output
+## Screenshots
 
 ```
   ____                  ____                  _
@@ -71,21 +27,74 @@ Reference system: Ryzen 5 5600, 16 GB DDR4, NVMe SSD, mid-range GPU, 100 Mbps in
  | |_| |  __/ | | | | | |_) |  __/ | | | (__| | | |
  |____/ \___|_| |_| |_|____/ \___|_| |_|\___|_| |_|
 
-        DemirArch  |  DemBench v1.0  |  System Benchmark Tool
-
-  BENCHMARK RESULTS
-  CPU Score:     45,230  (Single: 42,100 | Multi: 48,360)
-  RAM Score:     38,500  (R: 12500 MB/s | W: 10200 MB/s)
-  Disk Score:    62,100  (R: 2100 MB/s | W: 1800 MB/s)
-  GPU Score:     55,000
-  Network Score: 71,200  (DL: 85.3 Mbps | UL: 42.1 Mbps)
-
-  TOTAL SCORE: 51,893 / 100,000
+        DemirArch  •  DemBench v1.0  •  System Benchmark
 ```
+
+## Installation
+
+```bash
+git clone https://github.com/YOUR_USERNAME/dembench.git
+cd dembench
+pip install -r requirements.txt
+```
+
+### Requirements
+
+- Python 3.10+
+- customtkinter, psutil, numpy, PyOpenGL, pygame, speedtest-cli, rich
+
+## Usage
+
+```bash
+# Full benchmark
+python main.py
+
+# Skip GPU test
+python main.py --no-gpu
+
+# Skip network test
+python main.py --no-network
+
+# Custom output path
+python main.py --no-gpu --no-network --output my_report.json
+```
+
+On Windows you can also double-click **`DemBench.bat`** to launch directly.
+
+### Controls
+
+| Key | Action |
+|-----|--------|
+| `Q` | Quit |
+| `Escape` | Quit |
+
+## Scoring System
+
+Each component generates a normalized score from 0 to 100,000. The total score is a weighted average:
+
+| Component | Weight | Test Method |
+|-----------|--------|-------------|
+| CPU | 30% | Primes, matrix multiplication, Fibonacci |
+| RAM | 20% | NumPy array read/write bandwidth |
+| Disk | 20% | 256 MB sequential read/write |
+| GPU | 20% | OpenGL triangle render loop |
+| Network | 10% | speedtest download/upload/ping |
+
+**Reference system:** Ryzen 5 5600, 16 GB DDR4, NVMe SSD, mid-range GPU, 100 Mbps internet.
+
+### Score Tiers
+
+| Score | Tier |
+|-------|------|
+| 80,000+ | EXCELLENT |
+| 60,000+ | GREAT |
+| 40,000+ | GOOD |
+| 20,000+ | AVERAGE |
+| < 20,000 | LOW |
 
 ## JSON Report
 
-A report file `dembench_report_YYYYMMDD_HHMMSS.json` is generated after each run:
+A report file `dembench_report_YYYYMMDD_HHMMSS.json` is auto-generated after each run:
 
 ```json
 {
@@ -116,26 +125,27 @@ A report file `dembench_report_YYYYMMDD_HHMMSS.json` is generated after each run
 ```
 dembench/
 ├── main.py              # Entry point with CLI args
+├── DemBench.bat         # Windows launcher
 ├── benchmarks/
-│   ├── __init__.py
 │   ├── cpu.py           # CPU benchmark
 │   ├── ram.py           # RAM benchmark
 │   ├── disk.py          # Disk benchmark
 │   ├── gpu.py           # GPU benchmark (OpenGL)
 │   └── network.py       # Network benchmark (speedtest)
 ├── ui/
-│   ├── __init__.py
-│   ├── app.py           # Textual app
-│   └── widgets.py       # Custom TUI widgets
-├── scoring.py           # Score calculation
+│   ├── app.py           # CustomTkinter GUI (Material Design 3)
+│   └── widgets.py       # Theme constants
+├── scoring.py           # Weighted score calculation
 ├── reporter.py          # JSON report generator
 ├── requirements.txt
-├── README.md
-└── LICENSE
+├── LICENSE              # GPL-3.0
+└── .gitignore
 ```
 
 ## License
 
-GPL-3.0 - See [LICENSE](LICENSE) for details.
+GPL-3.0 — See [LICENSE](LICENSE) for details.
 
-**DemirArch** - DemBench v1.0
+---
+
+**DemirArch** — DemBench v1.0
