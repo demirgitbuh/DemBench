@@ -1,0 +1,10 @@
+"""DemBench UI constants — Material Design 3 Dark Theme."""
+
+BG_BASE = "#0f0f17"
+BG_SURFACE = "#1a1b2e"
+BG_SURFACE2 = "#232440"
+ACCENT = "#00D4AA"
+ACCENT_DIM = "#007a63"
+ACCENT_GLOW = "#00FFcc"
+TEXT_ON = "#e8eaed"
+TEXT_DIM = "#8b8fa3"
