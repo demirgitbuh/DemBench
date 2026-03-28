@@ -20,7 +20,7 @@ def generate_report(results: dict, output_path: str | None = None) -> str:
 
     report = {
         "tool": "DemBench",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "brand": "DemirArch",
         "timestamp": datetime.now().isoformat(),
         "system": {
@@ -49,6 +49,9 @@ def generate_report(results: dict, output_path: str | None = None) -> str:
             "gpu": {
                 "score": results.get("gpu", {}).get("score", 0),
                 "skipped": results.get("gpu", {}).get("skipped", False),
+                "frames": results.get("gpu", {}).get("frames", 0),
+                "fps": results.get("gpu", {}).get("fps", 0),
+                "renderer": results.get("gpu", {}).get("renderer", "unknown"),
             },
             "network": {
                 "download_mbps": results.get("network", {}).get("download_mbps", 0.0),

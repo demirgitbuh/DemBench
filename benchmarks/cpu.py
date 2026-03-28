@@ -97,8 +97,10 @@ def run(progress_callback=None) -> dict:
         if progress_callback:
             progress_callback(0.9, "Calculating scores...")
 
-        single_score = int(min((REFERENCE_SINGLE / max(single_time, 0.001)) * 50_000, 100_000))
-        multi_score = int(min((REFERENCE_MULTI / max(multi_time, 0.001)) * 50_000 * (min(cores, 16) / 6), 100_000))
+        single_score = int(min((REFERENCE_SINGLE / max(single_time, 0.01)) * 50_000, 100_000))
+        core_factor = min(cores, 16) / 6.0
+        multi_score = int(min((REFERENCE_MULTI / max(multi_time, 0.01)) * 50_000 * core_factor, 100_000))
+        multi_score = max(0, multi_score)  # Ensure non-negative
 
         total_duration = single_time + multi_time
 
