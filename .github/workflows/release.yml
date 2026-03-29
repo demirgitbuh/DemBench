@@ -1,0 +1,208 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v2.0.0)'
+        required: true
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+      - name: Build Windows exe
+        run: |
+          pyinstaller --onefile --name DemBench --windowed ^
+            --add-data "benchmarks;benchmarks" ^
+            --add-data "ui;ui" ^
+            --add-data "scoring.py;." ^
+            --add-data "reporter.py;." ^
+            --hidden-import=customtkinter ^
+            --hidden-import=psutil ^
+            --hidden-import=numpy ^
+            --hidden-import=pygame ^
+            --hidden-import=OpenGL ^
+            --hidden-import=OpenGL.GL ^
+            --hidden-import=OpenGL.GLU ^
+            --hidden-import=speedtest ^
+            --collect-all customtkinter ^
+            main.py
+        shell: cmd
+      - name: Rename artifact
+        run: move dist\DemBench.exe dist\DemBench-Windows-x86_64.exe
+        shell: cmd
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: dist/DemBench-Windows-x86_64.exe
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install system deps
+        run: sudo apt-get update && sudo apt-get install -y python3-tk
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+      - name: Build Linux binary
+        run: |
+          pyinstaller --onefile --name DemBench --windowed \
+            --add-data "benchmarks:benchmarks" \
+            --add-data "ui:ui" \
+            --add-data "scoring.py:." \
+            --add-data "reporter.py:." \
+            --hidden-import=customtkinter \
+            --hidden-import=psutil \
+            --hidden-import=numpy \
+            --hidden-import=pygame \
+            --hidden-import=OpenGL \
+            --hidden-import=OpenGL.GL \
+            --hidden-import=OpenGL.GLU \
+            --hidden-import=speedtest \
+            --collect-all customtkinter \
+            main.py
+      - name: Rename artifact
+        run: mv dist/DemBench dist/DemBench-Linux-x86_64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: dist/DemBench-Linux-x86_64
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+      - name: Build macOS app
+        run: |
+          pyinstaller --onefile --name DemBench --windowed \
+            --add-data "benchmarks:benchmarks" \
+            --add-data "ui:ui" \
+            --add-data "scoring.py:." \
+            --add-data "reporter.py:." \
+            --hidden-import=customtkinter \
+            --hidden-import=psutil \
+            --hidden-import=numpy \
+            --hidden-import=pygame \
+            --hidden-import=OpenGL \
+            --hidden-import=OpenGL.GL \
+            --hidden-import=OpenGL.GLU \
+            --hidden-import=speedtest \
+            --collect-all customtkinter \
+            --osx-bundle-identifier com.demirarch.dembench \
+            main.py
+      - name: Create DMG
+        run: |
+          brew install create-dmg || true
+          mkdir -p dmg_content
+          cp dist/DemBench dmg_content/
+          create-dmg \
+            --volname "DemBench" \
+            --window-size 600 400 \
+            --icon-size 100 \
+            "dist/DemBench-macOS-Universal.dmg" \
+            "dmg_content/" || true
+          # Fallback: just zip if DMG fails
+          if [ ! -f dist/DemBench-macOS-Universal.dmg ]; then
+            cd dist && zip DemBench-macOS-Universal.zip DemBench && cd ..
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: |
+            dist/DemBench-macOS-Universal.dmg
+            dist/DemBench-macOS-Universal.zip
+
+  release:
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-build
+          path: artifacts/
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-build
+          path: artifacts/
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-build
+          path: artifacts/
+
+      - name: Get tag name
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "TAG=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.TAG }}
+          name: "DemBench ${{ steps.tag.outputs.TAG }} \u2014 Modern UI & 3D GPU Benchmark"
+          body: |
+            ## DemBench ${{ steps.tag.outputs.TAG }} Yay\u0131nland\u0131!
+
+            ### Yenilikler
+
+            #### UI Modernizasyonu
+            - **Neon Dark Theme** \u2014 Modern neon renk paleti
+            - **Renk kodlu benchmark kartlar\u0131** \u2014 CPU: Mavi, RAM: Mor, Disk: Turuncu, GPU: Pembe, Network: Teal
+            - **Glassmorphism efektleri** \u2014 Accent stripe, elevated surface
+            - **JetBrains Mono** font, geli\u015fmi\u015f summary kart\u0131
+
+            #### GPU Testi 3D Modernizasyon
+            - 2D \u00fc\u00e7genler yerine **tam 3D animasyonlu sahne**
+            - D\u00f6nen k\u00fcp, y\u00f6r\u00fcnge k\u00fcreler, torus halka, piramitler
+            - **OpenGL**: Lighting, depth testing, perspective projection
+            - **Dinamik kamera** orbiti, **512x512 viewport**
+
+            #### Bug D\u00fczeltmeleri
+            - GPU JSON parsing, CPU skor, thread-safe UI, hata loglama
+
+            ---
+
+            ### Indirmeler
+
+            | Platform | Dosya |
+            |----------|-------|
+            | Windows | `DemBench-Windows-x86_64.exe` |
+            | Linux | `DemBench-Linux-x86_64` |
+            | macOS | `DemBench-macOS-Universal.dmg` / `.zip` |
+
+            > Kaynak koddan \u00e7al\u0131\u015ft\u0131rmak i\u00e7in: `pip install -r requirements.txt && python main.py`
+          files: artifacts/*
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
